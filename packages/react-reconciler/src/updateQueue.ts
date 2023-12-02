@@ -13,12 +13,14 @@ export interface UpdateQueue {
 }
 
 // 创建
-export const createUpdate = (action: UpdateAction) => {
+export const createUpdateQueue = <State>(): UpdateQueue<State> => {
 	return {
-		action
+		shared: {
+			pending: null
+		},
+		dispatch: null
 	};
 };
-
 // 插入
 export const enqueueUpdate = (fiber: FiberNode, update: Update) => {
 	const updateQueue = fiber.updateQueue;
