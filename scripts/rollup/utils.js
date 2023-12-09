@@ -17,7 +17,7 @@ function getPackageJSON(pkgName) {
 	const str = fs.readFileSync(path, { encoding: 'utf8' });
 	return JSON.parse(str);
 }
-function getBaseRollupPlugins({ typescript = {}, alias = { __DEV__: true } } = {}) {
+function getBaseRollupPlugins({ typescript = {}, alias = { __DEV__: true, preventAssignment: true } } = {}) {
 	return [replace(alias), cjs(), ts(typescript)];
 }
 export { resolvePkgPath, getPackageJSON, getBaseRollupPlugins };

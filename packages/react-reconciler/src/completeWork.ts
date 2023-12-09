@@ -3,7 +3,7 @@
 import { FiberNode } from './fiber';
 import { HostComponent, HostText } from './workTags';
 import { NoFlags } from './fiberFlags';
-import { Container, createInstance, createTextInstance, appendInitialChild } from './hostConfig';
+import { Container, createInstance, createTextInstance, appendInitialChild } from 'hostConfig';
 
 export const completeWork = (wip: FiberNode) => {
 	const newProps = wip.pendingProps;
@@ -24,7 +24,7 @@ export const completeWork = (wip: FiberNode) => {
 			if (current !== null && wip.stateNode) {
 			} else {
 				// 1 构建dom
-				const instance = createTextInstance(wip.type, newProps);
+				const instance = createTextInstance(wip.type);
 				wip.stateNode = instance;
 			}
 			bubbleProperties(wip);

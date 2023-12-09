@@ -10,7 +10,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 		return fiber;
 	}
 	function rceconcileSingleTextNode(returnFiber: FiberNode, currentFiber: FiberNode | null, element: string | number) {
-		const fiber = new FiberNode(HostText, { content }, null);
+		const fiber = new FiberNode(HostText, { content:'' }, null);
 		fiber.return = returnFiber;
 		return fiber;
 	}
