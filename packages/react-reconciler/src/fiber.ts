@@ -17,7 +17,8 @@ export class FiberNode {
 	memoizedState: Props | null;
 	alternate: FiberNode | null;
 	flags: Flags;
-	subtreeFlags: Flags;
+  subtreeFlags: Flags;
+  finishedWork: any;
 	updateQueue: any;
 	constructor(tag: WorkTag, pendingProps: Props, key: Key) {
 		this.tag = tag;
@@ -38,18 +39,20 @@ export class FiberNode {
 		this.alternate = null;
 		// 副作用
 		this.flags = NoFlags;
-		this.subtreeFlags = NoFlags;
+    this.subtreeFlags = NoFlags;
+    
+    this.finishedWork = null;
 	}
 }
 export class FiberRootNode {
 	container: Container;
 	current: FiberNode;
-	finishWork: FiberNode | null;
+	finishedWork: FiberNode | null;
 	constructor(container: Container, hostRootFiber: FiberNode) {
 		this.container = container;
 		this.current = hostRootFiber;
 		hostRootFiber.stateNode = this;
-		this.finishWork = null;
+		this.finishedWork = null;
 	}
 }
 export const createWorkInProgress = (current: FiberNode, pendingProps: Props): FiberNode => {

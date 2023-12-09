@@ -3,6 +3,7 @@
 import { FiberNode } from './fiber';
 import { HostComponent, HostText } from './workTags';
 import { NoFlags } from './fiberFlags';
+import { Container, createInstance, createTextInstance, appendInitialChild } from './hostConfig';
 
 export const completeWork = (wip: FiberNode) => {
 	const newProps = wip.pendingProps;
