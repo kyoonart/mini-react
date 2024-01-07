@@ -5,7 +5,7 @@ import { ReactElementType } from 'share/ReactTypes';
 export function createRoot(container: Container) {
   const root = createContainer(container);
   return {
-    render(element:ReactElementType) {
+    render(element: ReactElementType) {
       updateContainer(element, root);
      }
    }
