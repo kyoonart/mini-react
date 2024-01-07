@@ -1,51 +1,53 @@
-// 递归中的递阶段
-// dfs 深度优先遍历
-import { ReactElementType } from 'share/ReactTypes';
+import { ReactElement } from 'shared/ReactTypes';
+import { mountChildFibers, reconcileChildFibers } from './childFiber';
 import { FiberNode } from './fiber';
-import { UpdateQueue, processUpdateQueue } from './updateQueue';
+import { processUpdateQueue } from './updateQueue';
 import { HostComponent, HostRoot, HostText } from './workTags';
-import { reconcileChildFibers, mountChildFibers } from './childFibers';
 
-export const beginWork = (wip: FiberNode) => {
-	switch (wip.tag) {
+export const beginWork = (workInProgress: FiberNode) => {
+  if (__DEV__) {
+    console.log('进入beginWork');
+  }
+	switch (workInProgress.tag) {
 		case HostRoot:
-			return updateHostRoot(wip);
+			return updateHostRoot(workInProgress);
 		case HostComponent:
-			return updateHostComponent(wip);
+			return updateHostComponent(workInProgress);
 		case HostText:
 			return null;
 		default:
-			if (__DEV__) {
-				console.warn('beginWork 未实现的类型');
-			}
-			break;
+			console.error('beginWork未处理的情况');
+			return null;
 	}
-	return null;
 };
 
-function updateHostRoot(wip: FiberNode) {
-	const baseState = wip.memoizedState;
-	const updateQuene = wip.updateQueue as UpdateQueue<Element>;
-	const pending = updateQuene.shared.pending;
-	updateQuene.shared.pending = null;
-	const { memoizedState } = processUpdateQueue(baseState, pending);
-	wip.memoizedState = memoizedState;
-	const nextChildren = wip.memoizedState;
-	recocnileChildren(wip, nextChildren);
-	return wip.child;
+function updateHostComponent(workInProgress: FiberNode) {
+	// 根据element创建fiberNode
+	const nextProps = workInProgress.pendingProps;
+	const nextChildren = nextProps.children;
+	reconcileChildren(workInProgress, nextChildren);
+	return workInProgress.child;
 }
 
-function updateHostComponent(wip: FiberNode) {
-	const nextProps = wip.pendingProps;
-	const nextChildren = nextProps.children;
-	recocnileChildren(wip, nextChildren);
-	return wip.child;
+function updateHostRoot(workInProgress: FiberNode) {
+	processUpdateQueue(workInProgress);
+	const nextChildren = workInProgress.memoizedState;
+	reconcileChildren(workInProgress, nextChildren);
+	return workInProgress.child;
 }
-function recocnileChildren(wip: FiberNode, children?: ReactElementType) {
-	const current = wip.alternate;
+
+function reconcileChildren(workInProgress: FiberNode, children?: ReactElement) {
+	const current = workInProgress.alternate;
+
 	if (current !== null) {
-		wip.child = reconcileChildFibers(wip, current?.child, children);
+		// update
+		workInProgress.child = reconcileChildFibers(
+			workInProgress,
+			current.child,
+			children
+		);
 	} else {
-		wip.child = mountChildFibers(wip, null, children);
+		// mount
+		workInProgress.child = mountChildFibers(workInProgress, null, children);
 	}
 }

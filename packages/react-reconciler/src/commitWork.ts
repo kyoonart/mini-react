@@ -1,20 +1,29 @@
-import { Container, appendChildToContainer } from 'hostConfig';
 import { FiberNode, FiberRootNode } from './fiber';
-import { ChildDeletion, MutationMask, NoFlags, Placement, Update } from './fiberFlags';
+import { MutationMask, NoFlags, Placement } from './fiberFlags';
+import { appendChildToContainer, Container } from './hostConfig';
 import { HostComponent, HostRoot, HostText } from './workTags';
 
 let nextEffect: FiberNode | null = null;
+
+// 以DFS形式执行
 export const commitMutationEffects = (finishedWork: FiberNode) => {
 	nextEffect = finishedWork;
+
 	while (nextEffect !== null) {
+		// 向下遍历
 		const child: FiberNode | null = nextEffect.child;
-		if ((nextEffect.subtreeFlags & MutationMask) !== NoFlags && child !== null) {
+
+		if (
+			(nextEffect.subtreeFlags & MutationMask) !== NoFlags &&
+			child !== null
+		) {
 			nextEffect = child;
 		} else {
 			// 向上遍历
 			up: while (nextEffect !== null) {
 				commitMutationEffectsOnFiber(nextEffect);
 				const sibling: FiberNode | null = nextEffect.sibling;
+
 				if (sibling !== null) {
 					nextEffect = sibling;
 					break up;
@@ -24,64 +33,58 @@ export const commitMutationEffects = (finishedWork: FiberNode) => {
 		}
 	}
 };
+
 const commitMutationEffectsOnFiber = (finishedWork: FiberNode) => {
 	const flags = finishedWork.flags;
+
 	if ((flags & Placement) !== NoFlags) {
+		// 插入/移动
 		commitPlacement(finishedWork);
-		// 执行完这个 需要重置
-		finishedWork.flags &= ~Placement;
-	}
-	if ((flags & Update) !== NoFlags) {
-		commitPlacement(finishedWork);
-		// 执行完这个 需要重置
-		finishedWork.flags &= ~Placement;
-	}
-	if ((flags & ChildDeletion) !== NoFlags) {
-		commitPlacement(finishedWork);
-		// 执行完这个 需要重置
 		finishedWork.flags &= ~Placement;
 	}
 };
+
 const commitPlacement = (finishedWork: FiberNode) => {
-	if (__DEV__) {
-		console.log('执行 placement 操作');
+	const hostParent = getHostParent(finishedWork) as FiberNode;
+	let parentStateNode;
+	switch (hostParent.tag) {
+		case HostRoot:
+			parentStateNode = (hostParent.stateNode as FiberRootNode).container;
+			break;
+		case HostComponent:
+			parentStateNode = hostParent.stateNode;
 	}
-	const hostParent = getHostParent(finishedWork);
-	if (hostParent !== null) {
-		appendPlacementNodeIntoContainer(finishedWork, hostParent);
-	}
+
+	// appendChild / insertBefore
+	appendPlacementNodeIntoContainer(finishedWork, parentStateNode);
 };
 
-function getHostParent(fiber: FiberNode): Container | null {
-	let parent = fiber.return;
-	while (parent) {
-		const parentTag = parent.tag;
-		if (parentTag === HostComponent) {
-			return parent.stateNode as Container;
-		}
-		if (parentTag === HostRoot) {
-			return (parent.stateNode as FiberRootNode).container;
-		}
-		parent = parent.return;
-	}
-	if (__DEV__) {
-		console.warn('未找到 host parent');
-	}
-	return null;
-}
-
-function appendPlacementNodeIntoContainer(finishedWork: FiberNode, hostParent: Container) {
-	if (finishedWork.tag === HostComponent || finishedWork.tag === HostText) {
-    appendChildToContainer(hostParent, finishedWork.stateNode);
+function appendPlacementNodeIntoContainer(fiber: FiberNode, parent: Container) {
+	if (fiber.tag === HostComponent || fiber.tag === HostText) {
+		appendChildToContainer(fiber.stateNode, parent);
 		return;
 	}
-	const child = finishedWork.child;
+	const child = fiber.child;
 	if (child !== null) {
-		appendPlacementNodeIntoContainer(child, hostParent);
+		appendPlacementNodeIntoContainer(child, parent);
 		let sibling = child.sibling;
+
 		while (sibling !== null) {
-			appendPlacementNodeIntoContainer(sibling, hostParent);
+			appendPlacementNodeIntoContainer(sibling, parent);
 			sibling = sibling.sibling;
 		}
 	}
+}
+
+function getHostParent(fiber: FiberNode) {
+	let parent = fiber.return;
+
+	while (parent) {
+		const parentTag = parent.tag;
+		if (parentTag === HostComponent || parentTag === HostRoot) {
+			return parent;
+		}
+		parent = parent.return;
+	}
+	console.error('getHostParent未找到hostParent');
 }

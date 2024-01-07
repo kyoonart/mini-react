@@ -10,6 +10,15 @@ export interface ReactElementType {
 	key: Key;
 	props: Props;
 	ref: Ref;
-	__mark: string;
+	__mark: 'kyoonart';
 }
+export interface ReactElement {
+	$$typeof: symbol | number;
+	type: ElementType;
+	key: Key;
+	props: Props;
+	ref: Ref;
+	__mark: 'kyoonart';
+}
+
 export type Action<State> = State | ((prevState: State) => State);

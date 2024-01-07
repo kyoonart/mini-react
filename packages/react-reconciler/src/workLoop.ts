@@ -1,99 +1,133 @@
-import { FiberNode, FiberRootNode, createWorkInProgress } from './fiber';
 import { beginWork } from './beginWork';
-import { completeWork } from './completeWork';
-import { HostRoot } from './workTags';
-import { MutationMask, NoFlags } from './fiberFlags';
 import { commitMutationEffects } from './commitWork';
+import { completeWork } from './completeWork';
+import { createWorkInProgress, FiberNode, FiberRootNode } from './fiber';
+import { MutationMask, NoFlags } from './fiberFlags';
+import { HostRoot } from './workTags';
+
 let workInProgress: FiberNode | null = null;
 
-function prepareFreshStack(root: FiberRootNode) {
-	workInProgress = createWorkInProgress(root.current, {});
+export function scheduleUpdateOnFiber(fiber: FiberNode) {
+	const root = markUpdateLaneFromFiberToRoot(fiber);
+
+	if (root === null) {
+		return;
+	}
+	ensureRootIsScheduled(root);
 }
-function markUpdateFromFiberToRoot(fiber: FiberNode) {
+
+function markUpdateLaneFromFiberToRoot(fiber: FiberNode) {
 	let node = fiber;
 	let parent = node.return;
 	while (parent !== null) {
 		node = parent;
-		parent = parent.return;
+		parent = node.return;
 	}
 	if (node.tag === HostRoot) {
 		return node.stateNode;
 	}
 	return null;
 }
-export function scheduleUpdateOnFiber(fiber: FiberNode) {
-	const root = markUpdateFromFiberToRoot(fiber);
-	renderRoot(root);
+
+function ensureRootIsScheduled(root: FiberRootNode) {
+	// 一些调度行为
+	performSyncWorkOnRoot(root);
 }
-function renderRoot(root: FiberRootNode) {
-	// 初始化
+
+function performSyncWorkOnRoot(root: FiberRootNode) {
+	// 初始化操作
 	prepareFreshStack(root);
+
+	// render阶段具体操作
 	do {
 		try {
 			workLoop();
 			break;
-		} catch (error) {
-			if (__DEV__) {
-				console.warn('error', error);
-			}
+		} catch (e) {
+			console.error('workLoop发生错误', e);
 			workInProgress = null;
 		}
 	} while (true);
+
+	if (workInProgress !== null) {
+		console.error('render阶段结束时wip不为null');
+	}
+
 	const finishedWork = root.current.alternate;
 	root.finishedWork = finishedWork;
-	// wip fiberNode 树 树中的 flags
+
+	// commit阶段操作
 	commitRoot(root);
 }
-function commitRoot(root: FiberRootNode) {
-  const finishedWork = root.finishedWork;
-  if (finishedWork === null) {
-    return;
-  }
-  if (__DEV__) {
-    console.log('进入了 commit阶段');
-  }
-  //重置
-  root.finishedWork = null;
-  // 判断是3个子阶段需要执行的操作
-  // root本身的 flags root subtreeFlags(子节点的 placement会冒泡到父节点)
-  const subtreeHasEffect = (finishedWork.subtreeFlags & MutationMask) !== NoFlags; //代表子节点有 placement
-  const rootHasEffect = (finishedWork.subtreeFlags & MutationMask) !== NoFlags; //代表本生有 placement
 
-  if (subtreeHasEffect || rootHasEffect) {
-    //beforeMutation
-    //mutation
-    commitMutationEffects(finishedWork);
-    root.current=finishedWork;
-    // layout
-  } else {
-    root.current=finishedWork;
-  }
+function commitRoot(root: FiberRootNode) {
+	const finishedWork = root.finishedWork;
+
+	if (finishedWork === null) {
+		return;
+	}
+	// 重置
+	root.finishedWork = null;
+
+	const subtreeHasEffect =
+		(finishedWork.subtreeFlags & MutationMask) !== NoFlags;
+	const rootHasEffect = (finishedWork.flags & MutationMask) !== NoFlags;
+
+	if (subtreeHasEffect || rootHasEffect) {
+		// 有副作用要执行
+
+		// 阶段1/3:beforeMutation
+
+		// 阶段2/3:Mutation
+		commitMutationEffects(finishedWork);
+
+		// Fiber Tree切换
+		root.current = finishedWork;
+
+		// 阶段3:Layout
+	} else {
+		// Fiber Tree切换
+		root.current = finishedWork;
+	}
 }
+
+function prepareFreshStack(root: FiberRootNode) {
+	workInProgress = createWorkInProgress(root.current, {});
+}
+
 function workLoop() {
 	while (workInProgress !== null) {
 		performUnitOfWork(workInProgress);
 	}
 }
+
 function performUnitOfWork(fiber: FiberNode) {
 	const next = beginWork(fiber);
-	fiber.memoizedProps = fiber.pendingProps;
+
 	if (next === null) {
 		completeUnitOfWork(fiber);
 	} else {
 		workInProgress = next;
 	}
 }
+
 function completeUnitOfWork(fiber: FiberNode) {
 	let node: FiberNode | null = fiber;
+
 	do {
-		completeWork(node);
-		const sibling = node.sibling;
-		if (sibling !== null) {
-			workInProgress = sibling;
+		const next = completeWork(node);
+
+		if (next !== null) {
+			workInProgress = next;
 			return;
-		} else {
-			node = node.return;
-			workInProgress = node;
 		}
+
+		const sibling = node.sibling;
+		if (sibling) {
+			workInProgress = next;
+			return;
+		}
+		node = node.return;
+		workInProgress = node;
 	} while (node !== null);
 }

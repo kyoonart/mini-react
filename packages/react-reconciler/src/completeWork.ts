@@ -1,70 +1,81 @@
-// 递归中的归阶段
-// dfs 深度优先遍历
 import { FiberNode } from './fiber';
-import { HostComponent, HostText } from './workTags';
 import { NoFlags } from './fiberFlags';
-import { Container, createInstance, createTextInstance, appendInitialChild } from 'hostConfig';
+import {
+	appendInitialChild,
+	createInstance,
+	createTextInstance,
+	Instance
+} from './hostConfig';
+import { HostComponent, HostRoot, HostText } from './workTags';
 
-export const completeWork = (wip: FiberNode) => {
-	const newProps = wip.pendingProps;
-	const current = wip.alternate;
-	switch (wip.tag) {
-		case HostComponent:
-			if (current !== null && wip.stateNode) {
-			} else {
-				// 1 构建dom
-				const instance = createInstance(wip.type, newProps);
-				// 2 讲 dom查毒到 dom树中
-				appendAllChildren(instance, wip);
-				wip.stateNode = instance;
-			}
-			bubbleProperties(wip);
-			return null;
-		case HostText:
-			if (current !== null && wip.stateNode) {
-			} else {
-				// 1 构建dom
-				const instance = createTextInstance(wip.type);
-				wip.stateNode = instance;
-			}
-			bubbleProperties(wip);
-			return null;
-	}
-};
-
-function appendAllChildren(parent: Container, wip: FiberNode) {
-	let node = wip.child;
+const appendAllChildren = (parent: Instance, workInProgress: FiberNode) => {
+	// 遍历workInProgress所有子孙 DOM元素，依次挂载
+	let node = workInProgress.child;
 	while (node !== null) {
 		if (node.tag === HostComponent || node.tag === HostText) {
-			appendInitialChild(parent, node?.stateNode);
+			appendInitialChild(parent, node.stateNode);
 		} else if (node.child !== null) {
 			node.child.return = node;
 			node = node.child;
 			continue;
 		}
-		if (node === wip) {
+
+		if (node === workInProgress) {
 			return;
 		}
+
 		while (node.sibling === null) {
-			if (node.return === null || node.return === wip) {
+			if (node.return === null || node.return === workInProgress) {
 				return;
 			}
-			node = node?.return;
+			node = node.return;
 		}
 		node.sibling.return = node.return;
 		node = node.sibling;
 	}
-}
-function bubbleProperties(wip: FiberNode) {
-	let subtreeFlags = NoFlags;
-	let child = wip.child;
+};
 
+const bubbleProperties = (completeWork: FiberNode) => {
+	let subtreeFlags = NoFlags;
+	let child = completeWork.child;
 	while (child !== null) {
 		subtreeFlags |= child.subtreeFlags;
 		subtreeFlags |= child.flags;
 
-		child.return = wip;
+		child.return = completeWork;
 		child = child.sibling;
 	}
-	wip.subtreeFlags |= subtreeFlags;
-}
+	completeWork.subtreeFlags |= subtreeFlags;
+};
+
+export const completeWork = (workInProgress: FiberNode) => {
+	const newProps = workInProgress.pendingProps;
+
+	switch (workInProgress.tag) {
+		case HostComponent:
+			// 初始化DOM
+			const instance = createInstance(workInProgress.type);
+			// 挂载DOM
+			appendAllChildren(instance, workInProgress);
+			workInProgress.stateNode = instance;
+
+			// 初始化元素属性 TODO
+
+			// 冒泡flag
+			bubbleProperties(workInProgress);
+			return null;
+		case HostRoot:
+			bubbleProperties(workInProgress);
+			return null;
+		case HostText:
+			// 初始化DOM
+			const textInstanve = createTextInstance(newProps.content);
+			workInProgress.stateNode = textInstanve;
+			// 冒泡flag
+			bubbleProperties(workInProgress);
+			return null;
+		default:
+			console.error('completeWork未定义的fiber.tag', workInProgress);
+			return null;
+	}
+};
