@@ -1,45 +1,64 @@
-import { resolvePkgPath, getPackageJSON, getBaseRollupPlugins } from './utils';
+import { getPackageJSON, resolvePkgPath, getBaseRollupPlugin } from './utils';
 import generatePackageJson from 'rollup-plugin-generate-package-json';
 import alias from '@rollup/plugin-alias';
-const { name, module } = getPackageJSON('react-dom');
-// react dom 包路径
+
+const { name, module, peerDependencies } = getPackageJSON('react-dom');
+// react-dom包的路径
 const pkgPath = resolvePkgPath(name);
-// react-dom 产物路径
+// react-dom产物路径
 const pkgDistPath = resolvePkgPath(name, true);
 
 export default [
+	// react-dom
 	{
 		input: `${pkgPath}/${module}`,
-		output: [{
-			file: `${pkgDistPath}/index.js`,
-			name: 'index.js',
-			format: 'umd'
-    },
-    {
-			file: `${pkgDistPath}/client.js`,
-			name: 'client.js',
-			format: 'umd'
-		}],
+		output: [
+			{
+				file: `${pkgDistPath}/index.js`,
+				name: 'ReactDOM.js',
+				format: 'umd'
+			},
+			{
+				file: `${pkgDistPath}/client.js`,
+				name: 'client.js',
+				format: 'umd'
+			}
+		],
+		external: [...Object.keys(peerDependencies)],
 		plugins: [
-      ...getBaseRollupPlugins({ typescript: {} }),
-      // resolve alias
-      alias({
-        entry: {
-          hostConfig:`${pkgPath}/src/hostConfig.ts`
-        }
-      }),
+			...getBaseRollupPlugin(),
+			// webpack resolve alias
+			alias({
+				entries: {
+					hostConfig: `${pkgPath}/src/hostConfig.ts`
+				}
+			}),
 			generatePackageJson({
 				inputFolder: pkgPath,
 				outputFolder: pkgDistPath,
 				baseContents: ({ name, description, version }) => ({
 					name,
 					description,
-          version,
-          peerDependencies: {
-            react:version
-          },
+					version,
+					peerDependencies: {
+						react: version
+					},
 					main: 'index.js'
 				})
 			})
 		]
-	}];
+	},
+	// react-test-utils
+	{
+		input: `${pkgPath}/test-utils.ts`,
+		output: [
+			{
+				file: `${pkgDistPath}/test-utils.js`,
+				name: 'testUtils.js',
+				format: 'umd'
+			}
+		],
+		external: ['react-dom', 'react'],
+		plugins: getBaseRollupPlugin()
+	}
+];

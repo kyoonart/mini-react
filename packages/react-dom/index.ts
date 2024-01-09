@@ -1,2 +1,3 @@
-import * as ReactDom from './src/root';
-export default ReactDom;
+import * as ReactDOM from './src/root';
+
+export default ReactDOM;

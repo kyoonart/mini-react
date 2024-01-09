@@ -27,11 +27,17 @@ export const createUpdateQueue = <State>() => {
 	} as UpdateQueue<State>;
 };
 
-export const enqueueUpdate = <State>(updateQueue: UpdateQueue<State>, update: Update<State>) => {
+export const enqueueUpdate = <State>(
+	updateQueue: UpdateQueue<State>,
+	update: Update<State>
+) => {
 	updateQueue.shared.pending = update;
 };
 
-export const processUpdateQueue = <State>(baseState: State, pendingUpdate: Update<State> | null): { memoizedState: State } => {
+export const processUpdateQueue = <State>(
+	baseState: State,
+	pendingUpdate: Update<State> | null
+): { memoizedState: State } => {
 	const result: ReturnType<typeof processUpdateQueue<State>> = {
 		memoizedState: baseState
 	};

@@ -1,22 +1,27 @@
-import { resolvePkgPath, getPackageJSON, getBaseRollupPlugins } from './utils';
-import generatePackageJson from 'rollup-plugin-generate-package-json';
+/**
+ * react包的大包配置
+ */
+import { getPackageJSON, resolvePkgPath, getBaseRollupPlugin } from './utils';
+import generatePackageJSON from 'rollup-plugin-generate-package-json';
+
 const { name, module } = getPackageJSON('react');
-// react 包路径
+// react包的路径
 const pkgPath = resolvePkgPath(name);
-// react 产物路径
+// react产物路径
 const pkgDistPath = resolvePkgPath(name, true);
 
 export default [
+	// react
 	{
 		input: `${pkgPath}/${module}`,
 		output: {
 			file: `${pkgDistPath}/index.js`,
-			name: 'index.js',
+			name: 'React.js',
 			format: 'umd'
 		},
 		plugins: [
-			...getBaseRollupPlugins({ typescript: {} }),
-			generatePackageJson({
+			...getBaseRollupPlugin(),
+			generatePackageJSON({
 				inputFolder: pkgPath,
 				outputFolder: pkgDistPath,
 				baseContents: ({ name, description, version }) => ({
@@ -28,20 +33,23 @@ export default [
 			})
 		]
 	},
+	// jsx-runtime
 	{
 		input: `${pkgPath}/src/jsx.ts`,
 		output: [
+			// jsx-runtime
 			{
 				file: `${pkgDistPath}/jsx-runtime.js`,
 				name: 'jsx-runtime.js',
 				format: 'umd'
 			},
+			// jsx-dev-runtime
 			{
 				file: `${pkgDistPath}/jsx-dev-runtime.js`,
 				name: 'jsx-dev-runtime.js',
 				format: 'umd'
 			}
 		],
-		plugins: getBaseRollupPlugins({ typescript: {} })
+		plugins: getBaseRollupPlugin()
 	}
 ];

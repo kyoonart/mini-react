@@ -1,13 +1,16 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
+import React, { useState } from 'react';
+import ReactDOM from 'react-dom/client';
 
 function App() {
-  return (
-    <div>
-      <span>mini-react24</span>
-    </div>
-  );
-};
-const root = document.querySelector('#root') as any;
-console.log('App', App);
-ReactDOM.createRoot(root).render(App);
+	const [count, setCount] = useState(0);
+	window.setCount = setCount;
+	return count === 3 ? <Child /> : <div>{count}</div>;
+}
+
+function Child() {
+	return <span>mini-react</span>;
+}
+
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+	<App />
+);

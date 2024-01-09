@@ -1,48 +1,47 @@
 import { REACT_ELEMENT_TYPE } from 'shared/ReactSymbols';
-import { ReactElement, Key, Ref, Props, ElementType, ReactElementType } from 'shared/ReactTypes';
-// ReactElement
+import { Type, Key, Ref, Props, ReactElementType } from 'shared/ReactTypes';
+
 const ReactElement = function (
-	type: ElementType,
+	type: Type,
 	key: Key,
 	ref: Ref,
 	props: Props
-): ReactElement {
-	const element: ReactElement = {
+): ReactElementType {
+	const element = {
 		$$typeof: REACT_ELEMENT_TYPE,
-		type: type,
+		type,
 		key,
 		ref,
 		props,
-		__mark: 'kyoonart'
+		__mark: 'ohlyf'
 	};
-
 	return element;
 };
-
-function hasValidKey(config: any) {
-	return config.key !== undefined;
+// 是否合法Element
+export function isValidElement(object: any) {
+	return (
+		typeof object === 'object' &&
+		object !== null &&
+		object.$$typeof === REACT_ELEMENT_TYPE
+	);
 }
-
-function hasValidRef(config: any) {
-	return config.ref !== undefined;
-}
-
-const jsx = (type: ElementType, config: any) => {
+export const jsx = (type: Type, config: any, ...maybeChildren: any) => {
+	// 单独处理key 和 ref
 	let key: Key = null;
-	const props: any = {};
+	const props: Props = {};
 	let ref: Ref = null;
 
 	for (const prop in config) {
 		const val = config[prop];
 		if (prop === 'key') {
-			if (hasValidKey(config)) {
+			if (val !== undefined) {
 				key = '' + val;
 			}
 			continue;
 		}
-		if (prop === 'ref' && val !== undefined) {
-			if (hasValidRef(config)) {
-				ref = '' + val;
+		if (prop === 'ref') {
+			if (val !== undefined) {
+				ref = val;
 			}
 			continue;
 		}
@@ -50,7 +49,43 @@ const jsx = (type: ElementType, config: any) => {
 			props[prop] = val;
 		}
 	}
+
+	const maybeChildrenLength = maybeChildren.length;
+	if (maybeChildrenLength) {
+		// 当length===1只有一个
+		if (maybeChildrenLength === 1) {
+			props.children = maybeChildren[0];
+		} else {
+			props.children = maybeChildren;
+		}
+	}
 	return ReactElement(type, key, ref, props);
 };
 
-export const jsxDEV = jsx;
+export const jsxDEV = (type: Type, config: any) => {
+	// 单独处理key 和 ref
+	let key: Key = null;
+	const props: Props = {};
+	let ref: Ref = null;
+
+	for (const prop in config) {
+		const val = config[prop];
+		if (prop === 'key') {
+			if (val !== undefined) {
+				key = '' + val;
+			}
+			continue;
+		}
+		if (prop === 'ref') {
+			if (val !== undefined) {
+				ref = val;
+			}
+			continue;
+		}
+		if ({}.hasOwnProperty.call(config, prop)) {
+			props[prop] = val;
+		}
+	}
+
+	return ReactElement(type, key, ref, props);
+};
