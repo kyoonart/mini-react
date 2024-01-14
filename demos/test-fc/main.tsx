@@ -8,7 +8,7 @@ function App() {
 }
 
 function Child() {
-	return <span>mini-react</span>;
+  return <span><p>mini-react</p></span>;
 }
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(

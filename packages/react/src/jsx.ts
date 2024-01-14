@@ -13,7 +13,7 @@ const ReactElement = function (
 		key,
 		ref,
 		props,
-		__mark: 'ohlyf'
+		__mark: 'kyoonart'
 	};
 	return element;
 };
@@ -26,6 +26,7 @@ export function isValidElement(object: any) {
 	);
 }
 export const jsx = (type: Type, config: any, ...maybeChildren: any) => {
+	console.log("🚀 ~ jsx ~ config:", config)
 	// 单独处理key 和 ref
 	let key: Key = null;
 	const props: Props = {};
@@ -63,6 +64,7 @@ export const jsx = (type: Type, config: any, ...maybeChildren: any) => {
 };
 
 export const jsxDEV = (type: Type, config: any) => {
+	console.log("🚀 ~ jsxDEV ~ config:", config)
 	// 单独处理key 和 ref
 	let key: Key = null;
 	const props: Props = {};
